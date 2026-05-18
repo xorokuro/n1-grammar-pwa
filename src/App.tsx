@@ -5,28 +5,39 @@ import { GrammarList } from './components/GrammarList'
 import { GrammarDetail } from './components/GrammarDetail'
 import { ProgressScreen } from './components/ProgressScreen'
 import { BottomNav } from './components/BottomNav'
-import grammarData from './data/grammar.json'
-
-const points = grammarData as GrammarPoint[]
+import { SourceFilter } from './components/SourceFilter'
+import { allGrammarPoints } from './data/allGrammar'
+import { SOURCES } from './data/sources'
 
 type Tab = 'browse' | 'bookmarks' | 'progress'
 
 export default function App() {
   const [tab, setTab] = useState<Tab>('browse')
   const [selected, setSelected] = useState<GrammarPoint | null>(null)
+  const [activeSource, setActiveSource] = useState<string>('all')
   const { data: userData, toggleBookmark, setStatus } = useUserData()
+
+  // Points filtered by active source (used for the list + navigation)
+  const filteredPoints = activeSource === 'all'
+    ? allGrammarPoints
+    : allGrammarPoints.filter(p => p.sourceId === activeSource)
 
   const handleSelect = (p: GrammarPoint) => setSelected(p)
   const handleBack = () => setSelected(null)
 
   const handleNav = (p: GrammarPoint, dir: 1 | -1) => {
-    const idx = points.findIndex(x => x.id === p.id)
-    const next = points[idx + dir]
+    const idx = filteredPoints.findIndex(x => x.id === p.id)
+    const next = filteredPoints[idx + dir]
     if (next) setSelected(next)
   }
 
+  const handleSourceChange = (sourceId: string) => {
+    setActiveSource(sourceId)
+    setSelected(null)
+  }
+
   if (selected) {
-    const idx = points.findIndex(x => x.id === selected.id)
+    const idx = filteredPoints.findIndex(x => x.id === selected.id)
     return (
       <div className="h-screen overflow-hidden bg-slate-900 text-slate-100">
         <GrammarDetail
@@ -36,26 +47,52 @@ export default function App() {
           onToggleBookmark={toggleBookmark}
           onSetStatus={setStatus}
           onPrev={idx > 0 ? () => handleNav(selected, -1) : undefined}
-          onNext={idx < points.length - 1 ? () => handleNav(selected, 1) : undefined}
+          onNext={idx < filteredPoints.length - 1 ? () => handleNav(selected, 1) : undefined}
         />
       </div>
     )
   }
 
+  // Active source label for header
+  const activeSrc = activeSource === 'all'
+    ? null
+    : SOURCES.find(s => s.id === activeSource)
+
   return (
     <div className="h-screen overflow-hidden bg-slate-900 text-slate-100 flex flex-col">
       {/* Header */}
-      <header className="px-4 pt-safe pt-4 pb-3 border-b border-slate-800">
+      <header className="px-4 pt-safe pt-4 pb-2 border-b border-slate-800">
         <h1 className="text-lg font-bold text-slate-100">
-          N1 <span className="text-violet-400">文法</span>
+          {activeSrc ? (
+            <>
+              <span className="text-slate-300">{activeSrc.shortName}</span>{' '}
+              <span className={`text-sm font-normal`} style={{ color: 'inherit' }}>
+                {activeSrc.level}
+              </span>
+            </>
+          ) : (
+            <>JP <span className="text-violet-400">文法</span></>
+          )}
         </h1>
-        <p className="text-xs text-slate-500">150 grammar points</p>
+        <p className="text-xs text-slate-500">{filteredPoints.length} grammar points</p>
       </header>
+
+      {/* Source filter pills */}
+      <SourceFilter
+        active={activeSource}
+        points={allGrammarPoints}
+        onChange={handleSourceChange}
+      />
 
       {/* Main content */}
       <main className="flex-1 overflow-hidden">
         {tab === 'browse' && (
-          <GrammarList points={points} userData={userData} onSelect={handleSelect} />
+          <GrammarList
+            points={filteredPoints}
+            userData={userData}
+            onSelect={handleSelect}
+            showSourceBadge={activeSource === 'all'}
+          />
         )}
         {tab === 'bookmarks' && (
           <div className="h-full overflow-y-auto">
@@ -66,13 +103,24 @@ export default function App() {
                 <p className="text-xs mt-1">Tap ★ on any grammar point to save it</p>
               </div>
             ) : (
-              <GrammarList points={points} userData={userData} onSelect={handleSelect} bookmarksOnly />
+              <GrammarList
+                points={filteredPoints}
+                userData={userData}
+                onSelect={handleSelect}
+                bookmarksOnly
+                showSourceBadge={activeSource === 'all'}
+              />
             )}
           </div>
         )}
         {tab === 'progress' && (
           <div className="h-full overflow-y-auto">
-            <ProgressScreen points={points} userData={userData} />
+            <ProgressScreen
+              points={filteredPoints}
+              allPoints={allGrammarPoints}
+              userData={userData}
+              activeSource={activeSource}
+            />
           </div>
         )}
       </main>

@@ -1,17 +1,22 @@
 import type { GrammarPoint, UserData } from '../types'
+import { SOURCES, getSourceColors } from '../data/sources'
 
 interface Props {
-  points: GrammarPoint[]
+  points: GrammarPoint[]      // filtered to activeSource
+  allPoints: GrammarPoint[]   // all points for per-source breakdown
   userData: UserData
+  activeSource: string
 }
 
-export function ProgressScreen({ points, userData }: Props) {
+export function ProgressScreen({ points, allPoints, userData, activeSource }: Props) {
   const total = points.length
   const learned = points.filter(p => userData.status[p.id] === 'learned').length
   const reviewing = points.filter(p => userData.status[p.id] === 'reviewing').length
   const newCount = total - learned - reviewing
-  const bookmarks = userData.bookmarks.length
-  const pct = Math.round((learned / total) * 100)
+  const bookmarks = userData.bookmarks.filter(id =>
+    points.some(p => p.id === id)
+  ).length
+  const pct = total > 0 ? Math.round((learned / total) * 100) : 0
 
   return (
     <div className="px-4 pt-6 pb-24">
@@ -26,7 +31,7 @@ export function ProgressScreen({ points, userData }: Props) {
               cx="60" cy="60" r="50" fill="none"
               stroke="#7c3aed" strokeWidth="12"
               strokeDasharray={`${2 * Math.PI * 50}`}
-              strokeDashoffset={`${2 * Math.PI * 50 * (1 - learned / total)}`}
+              strokeDashoffset={`${2 * Math.PI * 50 * (1 - learned / (total || 1))}`}
               strokeLinecap="round"
               className="transition-all duration-700"
             />
@@ -34,7 +39,7 @@ export function ProgressScreen({ points, userData }: Props) {
               cx="60" cy="60" r="50" fill="none"
               stroke="#d97706" strokeWidth="12"
               strokeDasharray={`${2 * Math.PI * 50}`}
-              strokeDashoffset={`${2 * Math.PI * 50 * (1 - (learned + reviewing) / total)}`}
+              strokeDashoffset={`${2 * Math.PI * 50 * (1 - (learned + reviewing) / (total || 1))}`}
               strokeLinecap="round"
               style={{ opacity: 0.5 }}
               className="transition-all duration-700"
@@ -56,10 +61,45 @@ export function ProgressScreen({ points, userData }: Props) {
       </div>
 
       {/* Total */}
-      <div className="bg-slate-800 rounded-2xl p-4 text-center">
+      <div className="bg-slate-800 rounded-2xl p-4 text-center mb-6">
         <p className="text-3xl font-bold text-violet-400">{total}</p>
-        <p className="text-sm text-slate-400 mt-1">Total N1 Grammar Points</p>
+        <p className="text-sm text-slate-400 mt-1">
+          {activeSource === 'all' ? 'Total Grammar Points' : 'Grammar Points in View'}
+        </p>
       </div>
+
+      {/* Per-source breakdown (only shown in "all" view) */}
+      {activeSource === 'all' && (
+        <div>
+          <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">By Source</p>
+          <div className="space-y-3">
+            {SOURCES.map(src => {
+              const srcPoints = allPoints.filter(p => p.sourceId === src.id)
+              if (srcPoints.length === 0) return null
+              const srcLearned = srcPoints.filter(p => userData.status[p.id] === 'learned').length
+              const srcPct = Math.round((srcLearned / srcPoints.length) * 100)
+              const colors = getSourceColors(src.id)
+              return (
+                <div key={src.id} className="bg-slate-800 rounded-2xl p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <div>
+                      <span className={`text-sm font-semibold ${colors.text}`}>{src.shortName}</span>
+                      <span className="text-xs text-slate-500 ml-2">{src.level}</span>
+                    </div>
+                    <span className="text-sm text-slate-300">{srcLearned}/{srcPoints.length}</span>
+                  </div>
+                  <div className="w-full bg-slate-700 rounded-full h-1.5">
+                    <div
+                      className={`h-1.5 rounded-full transition-all duration-500 ${colors.badge}`}
+                      style={{ width: `${srcPct}%` }}
+                    />
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
     </div>
   )
 }

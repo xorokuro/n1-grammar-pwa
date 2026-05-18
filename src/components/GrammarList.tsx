@@ -1,17 +1,24 @@
 import { useState, useMemo } from 'react'
 import type { GrammarPoint, StudyStatus, UserData } from '../types'
 import { StatusBadge } from './StatusBadge'
+import { getSourceColors, SOURCES } from '../data/sources'
 
 interface Props {
   points: GrammarPoint[]
   userData: UserData
   onSelect: (p: GrammarPoint) => void
   bookmarksOnly?: boolean
+  showSourceBadge?: boolean
 }
 
 type FilterStatus = 'all' | StudyStatus
 
-export function GrammarList({ points, userData, onSelect, bookmarksOnly = false }: Props) {
+function pointLabel(p: GrammarPoint): string {
+  if (p.sourceId === 'n1') return `#${String(p.id).padStart(2, '0')}`
+  return p.romaji ?? p.sourceId.toUpperCase()
+}
+
+export function GrammarList({ points, userData, onSelect, bookmarksOnly = false, showSourceBadge = false }: Props) {
   const [query, setQuery] = useState('')
   const [filter, setFilter] = useState<FilterStatus>('all')
 
@@ -30,7 +37,8 @@ export function GrammarList({ points, userData, onSelect, bookmarksOnly = false 
         p =>
           p.pattern.toLowerCase().includes(q) ||
           p.englishConcept.toLowerCase().includes(q) ||
-          p.coreDefinitionZh.includes(q) ||
+          (p.coreDefinitionZh?.includes(q) ?? false) ||
+          (p.romaji?.toLowerCase().includes(q) ?? false) ||
           String(p.id).includes(q)
       )
     }
@@ -54,7 +62,7 @@ export function GrammarList({ points, userData, onSelect, bookmarksOnly = false 
             type="search"
             value={query}
             onChange={e => setQuery(e.target.value)}
-            placeholder="Search grammar, #number, English..."
+            placeholder="Search pattern, romaji, English..."
             className="w-full bg-slate-800 text-slate-100 placeholder-slate-500 rounded-xl pl-9 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
           />
         </div>
@@ -95,6 +103,8 @@ export function GrammarList({ points, userData, onSelect, bookmarksOnly = false 
           visible.map(p => {
             const status: StudyStatus = userData.status[p.id] ?? 'new'
             const isBookmarked = userData.bookmarks.includes(p.id)
+            const colors = getSourceColors(p.sourceId)
+            const src = SOURCES.find(s => s.id === p.sourceId)
             return (
               <button
                 key={p.id}
@@ -103,8 +113,15 @@ export function GrammarList({ points, userData, onSelect, bookmarksOnly = false 
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1.5">
-                      <span className="text-xs font-mono text-violet-400 font-bold">#{String(p.id).padStart(2, '0')}</span>
+                    <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+                      <span className={`text-xs font-mono font-bold ${colors.text}`}>
+                        {pointLabel(p)}
+                      </span>
+                      {showSourceBadge && src && (
+                        <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${colors.badge} text-white`}>
+                          {src.shortName}
+                        </span>
+                      )}
                       {isBookmarked && <span className="text-amber-400 text-xs">★</span>}
                       <StatusBadge status={status} />
                     </div>
