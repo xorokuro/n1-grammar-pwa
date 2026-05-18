@@ -1,0 +1,126 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    -webkit-tap-highlight-color: transparent;
+    box-sizing: border-box;
+  }
+
+  html {
+    height: 100%;
+    height: -webkit-fill-available;
+  }
+
+  body {
+    height: 100%;
+    min-height: -webkit-fill-available;
+    overscroll-behavior: none;
+  }
+
+  #root {
+    height: 100%;
+  }
+}
+
+@layer utilities {
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  .pt-safe {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}
+
+/* Markdown content styles */
+.grammar-content h3,
+.grammar-content h4 {
+  @apply text-slate-200 font-semibold mt-5 mb-2;
+}
+
+.grammar-content h3 {
+  @apply text-base;
+}
+
+.grammar-content h4 {
+  @apply text-sm text-violet-300;
+}
+
+.grammar-content p {
+  @apply text-slate-300 text-sm leading-relaxed mb-3;
+}
+
+.grammar-content strong {
+  @apply text-slate-100 font-semibold;
+}
+
+.grammar-content em {
+  @apply text-violet-300 not-italic;
+}
+
+.grammar-content ul,
+.grammar-content ol {
+  @apply text-slate-300 text-sm space-y-1.5 mb-3 pl-4;
+}
+
+.grammar-content li {
+  @apply leading-relaxed;
+}
+
+.grammar-content ul > li {
+  list-style-type: disc;
+}
+
+.grammar-content ol > li {
+  list-style-type: decimal;
+}
+
+.grammar-content li > ul {
+  @apply mt-1 pl-4;
+}
+
+.grammar-content table {
+  @apply w-full text-xs border-collapse mb-4 overflow-x-auto block;
+}
+
+.grammar-content th {
+  @apply bg-slate-700 text-slate-200 font-medium px-2 py-1.5 text-left;
+}
+
+.grammar-content td {
+  @apply border-t border-slate-700 px-2 py-1.5 text-slate-300;
+}
+
+.grammar-content hr {
+  @apply border-slate-700 my-4;
+}
+
+.grammar-content blockquote {
+  @apply border-l-2 border-violet-500 pl-3 text-slate-400 text-sm italic my-3;
+}
+
+.grammar-content code {
+  @apply bg-slate-800 text-violet-300 px-1 rounded text-xs font-mono;
+}
+
+.grammar-content pre {
+  @apply bg-slate-800 rounded-lg p-3 overflow-x-auto mb-3;
+}
+
+.grammar-content pre code {
+  @apply bg-transparent px-0;
+}
+
+/* Emoji section headers */
+.grammar-content h3:has(> *:first-child:empty),
+.grammar-content h4 {
+  @apply flex items-center gap-2;
+}
