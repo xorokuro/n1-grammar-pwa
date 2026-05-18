@@ -27,7 +27,17 @@ function isEntryHeader(line) {
 function isGarbage(line) {
   const l = line.trim()
   if (l.length === 0) return true
-  const good = (l.match(/[a-zA-Z0-9぀-ヿ一-鿿\s.,!?()\[\]\-\/’‘'"]/g) || []).length
+  // 5-8 digit standalone numbers = page/catalog artifacts (e.g. 699151, 482957)
+  if (/^\d{5,8}$/.test(l)) return true
+  // 1-2 lone CJK characters = chapter tab / figure label bleed
+  if (/^[一-鿿]{1,2}$/.test(l)) return true
+  // Chapter/section tab markers  e.g. "■DI", "■BA"
+  if (/^■/.test(l)) return true
+  // Roman numeral lines (II, III, IV ...) from page headers
+  if (/^(I{2,4}|IV|VI{0,3}|IX|XI{0,3}|XIV?)$/.test(l)) return true
+  // Bullet-dash noise  e.g. "•—i"
+  if (/^[•·]\s*[—–\-]\s*[a-z]?$/.test(l)) return true
+  const good = (l.match(/[a-zA-Z0-9぀-ヿ一-鿿\s.,!?()\[\]\-\/’’’"]/g) || []).length
   return good / l.length < 0.45 && l.length > 4
 }
 
@@ -114,6 +124,9 @@ function buildRawContent(contentLines) {
       // Normalize circle numbers
       let out = t
       for (const [k, v] of Object.entries(CIRCLE_MAP)) out = out.split(k).join(v)
+      // Fix OCR reading "/" as "1" between words  e.g. "kita 1 kimashita" → "kita / kimashita"
+      // Safe because DOBJG never uses standalone " 1 " mid-line in English prose
+      out = out.replace(/([a-zA-Zぁ-ゟ一-鿿。、）\}]) 1 ([a-zA-Zぁ-ゟ一-鿿（\{])/g, '$1 / $2')
       return out
     })
     .filter(l => l !== null)
